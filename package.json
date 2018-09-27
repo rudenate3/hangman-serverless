@@ -1,0 +1,22 @@
+{
+  "name": "hangman-serverless",
+  "version": "1.0.0",
+  "description": "Serverless backend for hangman client",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rudenate3/hangman-serverless.git"
+  },
+  "keywords": [
+    "serverless",
+    "aws",
+    "game",
+    "hangman"
+  ],
+  "author": "rudenate3",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/rudenate3/hangman-serverless/issues"
+  },
+  "homepage": "https://github.com/rudenate3/hangman-serverless#readme"
+}
