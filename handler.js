@@ -169,8 +169,9 @@ module.exports.addMove = (event, context, callback) => {
         for (let letter in wordLetterGuessed) {
           if (!wordLetterGuessed[letter]) allTrue = false
         }
-        if (allTrue) {
+        if (allTrue || gameState.guesses === wordArray.length + 10) {
           gameState.gameOver = true
+
         }
         const updatedGameState = {
           TableName: process.env.DYNAMODB_TABLE,
