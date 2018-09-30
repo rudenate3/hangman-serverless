@@ -1,7 +1,9 @@
 'use strict'
 
 const AWS = require('aws-sdk'),
-  docClient = new AWS.DynamoDB.DocumentClient({ region: process.env.REGION }),
+  docClient = new AWS.DynamoDB.DocumentClient({
+    region: process.env.REGION
+  }),
   uuid = require('uuid')
 
 const randomNumber = (min, max) => Math.floor(Math.random() * (max - min) + min)
@@ -71,6 +73,12 @@ module.exports.getGame = (event, context, callback) => {
             })
           })
         } else {
+          const game = {
+            id: newGameParams.Item.id,
+            email: newGameParams.Item.email,
+            gameOver: false,
+            word: newGameParams.Item.word
+          }
           callback(null, {
             statusCode: 200,
             headers: {
@@ -78,7 +86,7 @@ module.exports.getGame = (event, context, callback) => {
             },
             body: JSON.stringify({
               message: 'Game Returned',
-              game: newGameParams
+              game: game
             })
           })
         }
