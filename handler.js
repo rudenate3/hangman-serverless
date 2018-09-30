@@ -55,7 +55,7 @@ module.exports.getGame = (event, context, callback) => {
           id: uuid.v1(),
           email: event.requestContext.authorizer.claims.email,
           gameOver: false,
-          word: words[randomWord]
+          word: words[randomWord].toLowerCase()
         }
       }
       docClient.put(newGameParams, (err, game) => {
@@ -86,7 +86,117 @@ module.exports.getGame = (event, context, callback) => {
     }
   })
 }
-module.exports.addMove = (event, context, callback) => {}
+module.exports.addMove = (event, context, callback) => {
+  const params = {
+    TableName: process.env.DYNAMODB_TABLE,
+    Key: {
+      id: event.pathParameters.id
+    }
+  }
+  docClient.get(params, (err, game) => {
+    if (err) {
+      callback(null, {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': process.env.ORIGIN
+        },
+        body: JSON.stringify({
+          message: 'Error Returned',
+          error: err
+        })
+      })
+    } else {
+      const gameState = game.Item
+      if (!gameState.guesses) {
+        gameState.guesses = []
+        gameState.guesses.push(event.body.toLowerCase())
+        const updatedGameState = {
+          TableName: process.env.DYNAMODB_TABLE,
+          Item: gameState
+        }
+        docClient.put(updatedGameState, (err, game) => {
+          if (err) {
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                'Access-Control-Allow-Origin': process.env.ORIGIN
+              },
+              body: JSON.stringify({
+                message: 'Error Returned',
+                error: err
+              })
+            })
+          } else {
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                'Access-Control-Allow-Origin': process.env.ORIGIN
+              },
+              body: JSON.stringify({
+                message: 'Game Returned',
+                game: gameState
+              })
+            })
+          }
+        })
+      } else if (gameState.guesses.includes(event.body.toLowerCase())) {
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            'Access-Control-Allow-Origin': process.env.ORIGIN
+          },
+          body: JSON.stringify({
+            message: 'Already Guessed',
+            game: gameState
+          })
+        })
+      } else {
+        gameState.guesses.push(event.body.toLowerCase())
+        const wordArray = gameState.word.split(''),
+          wordLetterGuessed = wordArray.reduce((prev, curr) => {
+            prev[curr] = gameState.guesses.includes(curr)
+            return prev
+          }, {})
+        let allTrue = true
+        for (let letter in wordLetterGuessed) {
+          if (!wordLetterGuessed[letter]) allTrue = false
+        }
+        if (allTrue) {
+          gameState.gameOver = true
+        }
+        const updatedGameState = {
+          TableName: process.env.DYNAMODB_TABLE,
+          Item: gameState
+        }
+        docClient.put(updatedGameState, (err, game) => {
+          if (err) {
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                'Access-Control-Allow-Origin': process.env.ORIGIN
+              },
+              body: JSON.stringify({
+                message: 'Error Returned',
+                error: err
+              })
+            })
+          } else {
+            callback(null, {
+              statusCode: 200,
+              headers: {
+                'Access-Control-Allow-Origin': process.env.ORIGIN
+              },
+              body: JSON.stringify({
+                message: 'Game Returned',
+                game: gameState
+              })
+            })
+          }
+        })
+      }
+    }
+  })
+}
 
 module.exports.history = (event, context, callback) => {
   const params = {
