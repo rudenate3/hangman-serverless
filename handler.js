@@ -4,6 +4,8 @@ const AWS = require('aws-sdk'),
   docClient = new AWS.DynamoDB.DocumentClient({ region: process.env.REGION }),
   uuid = require('uuid')
 
+const randomNumber = (min, max) => Math.floor(Math.random() * (max - min) + min)
+
 module.exports.autoConfirmEmail = async (event, context, callback) => {
   event.response.autoConfirmUser = true
   callback(null, event)
@@ -45,13 +47,15 @@ module.exports.getGame = (event, context, callback) => {
         })
       })
     } else {
+      const words = require('words.json').words,
+        randomWord = randomNumber(0, words.length - 1)
       const newGameParams = {
         TableName: process.env.DYNAMODB_TABLE,
         Item: {
           id: uuid.v1(),
           email: event.requestContext.authorizer.claims.email,
           gameOver: false,
-          word: 'jazz'
+          word: words[randomWord]
         }
       }
       docClient.put(newGameParams, (err, game) => {
@@ -82,18 +86,7 @@ module.exports.getGame = (event, context, callback) => {
     }
   })
 }
-module.exports.addMove = async (event, context) => {
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': process.env.ORIGIN
-    },
-    body: JSON.stringify({
-      message: 'Leaderboard returned',
-      input: event
-    })
-  }
-}
+module.exports.addMove = (event, context, callback) => {}
 
 module.exports.history = (event, context, callback) => {
   const params = {
