@@ -165,13 +165,15 @@ module.exports.addMove = (event, context, callback) => {
             prev[curr] = gameState.guesses.includes(curr)
             return prev
           }, {})
-        let allTrue = true
+        let allTrue = true,
+          correctGuesses = 0
         for (let letter in wordLetterGuessed) {
+          if (wordLetterGuessed[letter]) correctGuesses++
           if (!wordLetterGuessed[letter]) allTrue = false
         }
-        if (allTrue || gameState.guesses === wordArray.length + 10) {
+        const overGuessLimit = gameState.guesses.length - correctGuesses === 10
+        if (allTrue || overGuessLimit) {
           gameState.gameOver = true
-
         }
         const updatedGameState = {
           TableName: process.env.DYNAMODB_TABLE,
@@ -190,6 +192,8 @@ module.exports.addMove = (event, context, callback) => {
               })
             })
           } else {
+            gameState.guessLength = gameState.guesses.length
+            gameState.overGuessLimit = overGuessLimit
             callback(null, {
               statusCode: 200,
               headers: {
