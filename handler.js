@@ -192,8 +192,6 @@ module.exports.addMove = (event, context, callback) => {
               })
             })
           } else {
-            gameState.guessLength = gameState.guesses.length
-            gameState.overGuessLimit = overGuessLimit
             callback(null, {
               statusCode: 200,
               headers: {
