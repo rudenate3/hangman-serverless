@@ -113,6 +113,21 @@ module.exports.addMove = (event, context, callback) => {
           error: err
         })
       })
+    } else if (
+      !event.body ||
+      event.body.length > 1 ||
+      !event.body.toLowerCase().match(/[a-z]/i)
+    ) {
+      callback(null, {
+        statusCode: 200,
+        headers: {
+          'Access-Control-Allow-Origin': process.env.ORIGIN
+        },
+        body: JSON.stringify({
+          message: 'Invalid Move',
+          game: game.Item
+        })
+      })
     } else {
       const gameState = game.Item
       if (!gameState.guesses) {
@@ -172,8 +187,12 @@ module.exports.addMove = (event, context, callback) => {
           if (!wordLetterGuessed[letter]) allTrue = false
         }
         const overGuessLimit = gameState.guesses.length - correctGuesses === 10
-        if (allTrue || overGuessLimit) {
+        if (allTrue) {
           gameState.gameOver = true
+          gameState.win = true
+        } else if (overGuessLimit) {
+          gameState.gameOver = true
+          gameState.win = false
         }
         const updatedGameState = {
           TableName: process.env.DYNAMODB_TABLE,
