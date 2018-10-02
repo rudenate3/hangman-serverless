@@ -61,7 +61,7 @@ module.exports.handler = (event, context, callback) => {
           gameOver: false,
           word: chosenWord,
           guessed: chosenWord.split('').map(letter => '_'),
-          created: new Date()
+          created: new Date().toString()
         }
       }
       docClient.put(newGameParams, (err, game) => {
