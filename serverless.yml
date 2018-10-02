@@ -69,13 +69,13 @@ resources:
 
 functions:
   autoConfirmEmail:
-    handler: methods/autoConfirmEmail.handler
+    handler: src/methods/autoConfirmEmail.handler
     # events:
     #   - cognitoUserPool:
     #       pool: ${self:provider.environment.USER_POOL}
     #       trigger: PreSignUp
   getGame:
-    handler: methods/getGame.handler
+    handler: src/methods/getGame.handler
     events:
       - http:
           path: game
@@ -85,7 +85,7 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId: { Ref: HangmanApiGatewayAuthorizer }
   addMove:
-    handler: methods/addMove.handler
+    handler: src/methods/addMove.handler
     events:
       - http:
           path: move/{id}
@@ -95,7 +95,7 @@ functions:
             type: COGNITO_USER_POOLS
             authorizerId: { Ref: HangmanApiGatewayAuthorizer }
   history:
-    handler: methods/history.handler
+    handler: src/methods/history.handler
     events:
       - http:
           path: history

@@ -36,7 +36,7 @@ module.exports.handler = (event, context, callback) => {
       },
       body: JSON.stringify({
         message: 'Games Returned',
-        games: games.Items.length > 0 ? games.Items : 'None'
+        games: games.Items.length > 0 ? games.Items : null
       })
     })
   })

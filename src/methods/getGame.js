@@ -40,19 +40,28 @@ module.exports.handler = (event, context, callback) => {
         },
         body: JSON.stringify({
           message: 'Game Returned',
-          game: game.Items[0]
+          game: {
+            id: game.Items[0].id,
+            gameOver: game.Items[0].gameOver,
+            guesses: game.Items[0].guesses,
+            correctGuesses: game.Items[0].correctGuesses,
+            guessed: game.Items[0].guessed
+          }
         })
       })
     } else {
       const words = require('words.json').words,
-        randomWord = randomNumber(0, words.length - 1)
+        randomWord = randomNumber(0, words.length - 1),
+        chosenWord = words[randomWord].toLowerCase()
       const newGameParams = {
         TableName: process.env.DYNAMODB_TABLE,
         Item: {
           id: uuid.v1(),
           email: event.requestContext.authorizer.claims.email,
           gameOver: false,
-          word: words[randomWord].toLowerCase()
+          word: chosenWord,
+          guessed: chosenWord.split('').map(letter => '_'),
+          created: new Date()
         }
       }
       docClient.put(newGameParams, (err, game) => {
@@ -70,9 +79,8 @@ module.exports.handler = (event, context, callback) => {
         } else {
           const game = {
             id: newGameParams.Item.id,
-            email: newGameParams.Item.email,
             gameOver: false,
-            word: newGameParams.Item.word
+            guessed: newGameParams.Item.guessed
           }
           callback(null, {
             statusCode: 200,
@@ -81,7 +89,7 @@ module.exports.handler = (event, context, callback) => {
             },
             body: JSON.stringify({
               message: 'Game Returned',
-              game: game
+              game
             })
           })
         }

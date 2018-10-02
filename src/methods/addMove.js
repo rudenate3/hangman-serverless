@@ -5,13 +5,51 @@ const AWS = require('aws-sdk'),
     region: process.env.REGION
   })
 
+const processMove = (guesses, word) => {
+  const wordArray = word.split(''),
+    lettersGuessed = wordArray.reduce((prev, curr) => {
+      if (guesses.includes(curr)) {
+        prev[curr] = true
+      }
+      return prev
+    }, {}),
+    correctGuesses = Object.keys(lettersGuessed),
+    guessed = wordArray.map(letter => {
+      if (lettersGuessed[letter]) {
+        return letter
+      } else {
+        return '_'
+      }
+    }),
+    win = wordArray.toString() === guessed.toString(),
+    overGuessLimit = guesses.length - correctGuesses.length === 10
+  return { guessed, win, overGuessLimit, correctGuesses }
+}
+
 module.exports.handler = (event, context, callback) => {
+  if (
+    !event.body ||
+    event.body.length > 1 ||
+    !event.body.toLowerCase().match(/[a-z]/i)
+  ) {
+    return callback(null, {
+      statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': process.env.ORIGIN
+      },
+      body: JSON.stringify({
+        message: 'Invalid Move'
+      })
+    })
+  }
+
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     Key: {
       id: event.pathParameters.id
     }
   }
+
   docClient.get(params, (err, game) => {
     if (err) {
       callback(null, {
@@ -24,26 +62,12 @@ module.exports.handler = (event, context, callback) => {
           error: err
         })
       })
-    } else if (
-      !event.body ||
-      event.body.length > 1 ||
-      !event.body.toLowerCase().match(/[a-z]/i)
-    ) {
-      callback(null, {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': process.env.ORIGIN
-        },
-        body: JSON.stringify({
-          message: 'Invalid Move',
-          game: game.Item
-        })
-      })
     } else {
       const gameState = game.Item
       if (!gameState.guesses) {
         gameState.guesses = []
         gameState.guesses.push(event.body.toLowerCase())
+        Object.assign(gameState, processMove(gameState.guesses, gameState.word))
         const updatedGameState = {
           TableName: process.env.DYNAMODB_TABLE,
           Item: gameState
@@ -68,7 +92,13 @@ module.exports.handler = (event, context, callback) => {
               },
               body: JSON.stringify({
                 message: 'Game Returned',
-                game: gameState
+                game: {
+                  id: gameState.id,
+                  gameOver: gameState.gameOver,
+                  guesses: gameState.guesses,
+                  guessed: gameState.guessed,
+                  correctGuesses: gameState.correctGuesses
+                }
               })
             })
           }
@@ -80,31 +110,13 @@ module.exports.handler = (event, context, callback) => {
             'Access-Control-Allow-Origin': process.env.ORIGIN
           },
           body: JSON.stringify({
-            message: 'Already Guessed',
-            game: gameState
+            message: 'Already Guessed'
           })
         })
       } else {
         gameState.guesses.push(event.body.toLowerCase())
-        const wordArray = gameState.word.split(''),
-          wordLetterGuessed = wordArray.reduce((prev, curr) => {
-            prev[curr] = gameState.guesses.includes(curr)
-            return prev
-          }, {})
-        let allTrue = true,
-          correctGuesses = 0
-        for (let letter in wordLetterGuessed) {
-          if (wordLetterGuessed[letter]) correctGuesses++
-          if (!wordLetterGuessed[letter]) allTrue = false
-        }
-        const overGuessLimit = gameState.guesses.length - correctGuesses === 10
-        if (allTrue) {
-          gameState.gameOver = true
-          gameState.win = true
-        } else if (overGuessLimit) {
-          gameState.gameOver = true
-          gameState.win = false
-        }
+        Object.assign(gameState, processMove(gameState.guesses, gameState.word))
+        if (gameState.win || gameState.overGuessLimit) gameState.gameOver = true
         const updatedGameState = {
           TableName: process.env.DYNAMODB_TABLE,
           Item: gameState
@@ -129,7 +141,13 @@ module.exports.handler = (event, context, callback) => {
               },
               body: JSON.stringify({
                 message: 'Game Returned',
-                game: gameState
+                game: {
+                  id: gameState.id,
+                  gameOver: gameState.gameOver,
+                  guesses: gameState.guesses,
+                  guessed: gameState.guessed,
+                  correctGuesses: gameState.correctGuesses
+                }
               })
             })
           }
