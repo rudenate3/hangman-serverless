@@ -3,7 +3,7 @@
 const { failure, success } = require('../utils/response'),
   docClient = require('../utils/dynamo').createDocClient()
 
-module.exports.handler = async (event, context, callback) => {
+module.exports.handler = (event, context, callback) => {
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     FilterExpression: 'email = :emailVal and gameOver = :gameOverVal',
