@@ -10,7 +10,7 @@ provider:
   region: ${env:REGION}
   environment:
     DYNAMODB_TABLE: ${self:service}-${self:provider.stage}
-    USER_POOL: ${self:service}-userPool
+    USER_POOL: ${self:service}-${self:provider.stage}
   iamRoleStatements: # permissions for all of your functions can be set here
     - Effect: Allow
       Action: # Gives permission to DynamoDB tables in a specific region
