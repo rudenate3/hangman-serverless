@@ -1,9 +1,7 @@
 'use strict'
 
-const AWS = require('aws-sdk'),
-  docClient = new AWS.DynamoDB.DocumentClient({
-    region: process.env.REGION
-  })
+const { failure, success } = require('../utils/response'),
+  docClient = require('../utils/dynamo').createDocClient()
 
 const processMove = (guesses, word) => {
   const wordArray = word.split(''),
@@ -32,15 +30,7 @@ module.exports.handler = (event, context, callback) => {
     event.body.length > 1 ||
     !event.body.toLowerCase().match(/[a-z]/i)
   ) {
-    return callback(null, {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': process.env.ORIGIN
-      },
-      body: JSON.stringify({
-        message: 'Invalid Move'
-      })
-    })
+    return callback(null, failure({ error: 'Invalid Move' }))
   }
 
   const params = {
@@ -50,18 +40,9 @@ module.exports.handler = (event, context, callback) => {
     }
   }
 
-  docClient.get(params, (err, game) => {
-    if (err) {
-      callback(null, {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': process.env.ORIGIN
-        },
-        body: JSON.stringify({
-          message: 'Error Returned',
-          error: err
-        })
-      })
+  docClient.get(params, (error, game) => {
+    if (error) {
+      callback(null, failure(error))
     } else {
       const gameState = game.Item
       if (!gameState.guesses) {
@@ -72,26 +53,13 @@ module.exports.handler = (event, context, callback) => {
           TableName: process.env.DYNAMODB_TABLE,
           Item: gameState
         }
-        docClient.put(updatedGameState, (err, game) => {
-          if (err) {
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                'Access-Control-Allow-Origin': process.env.ORIGIN
-              },
-              body: JSON.stringify({
-                message: 'Error Returned',
-                error: err
-              })
-            })
+        docClient.put(updatedGameState, (error, game) => {
+          if (error) {
+            callback(null, failure(error))
           } else {
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                'Access-Control-Allow-Origin': process.env.ORIGIN
-              },
-              body: JSON.stringify({
-                message: 'Game Returned',
+            callback(
+              null,
+              success({
                 game: {
                   id: gameState.id,
                   gameOver: gameState.gameOver,
@@ -100,19 +68,11 @@ module.exports.handler = (event, context, callback) => {
                   correctGuesses: gameState.correctGuesses
                 }
               })
-            })
+            )
           }
         })
       } else if (gameState.guesses.includes(event.body.toLowerCase())) {
-        callback(null, {
-          statusCode: 200,
-          headers: {
-            'Access-Control-Allow-Origin': process.env.ORIGIN
-          },
-          body: JSON.stringify({
-            message: 'Already Guessed'
-          })
-        })
+        callback(null, failure({ error: 'Already Guessed' }))
       } else {
         gameState.guesses.push(event.body.toLowerCase())
         Object.assign(gameState, processMove(gameState.guesses, gameState.word))
@@ -121,26 +81,13 @@ module.exports.handler = (event, context, callback) => {
           TableName: process.env.DYNAMODB_TABLE,
           Item: gameState
         }
-        docClient.put(updatedGameState, (err, game) => {
-          if (err) {
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                'Access-Control-Allow-Origin': process.env.ORIGIN
-              },
-              body: JSON.stringify({
-                message: 'Error Returned',
-                error: err
-              })
-            })
+        docClient.put(updatedGameState, (error, game) => {
+          if (error) {
+            callback(null, failure(error))
           } else {
-            callback(null, {
-              statusCode: 200,
-              headers: {
-                'Access-Control-Allow-Origin': process.env.ORIGIN
-              },
-              body: JSON.stringify({
-                message: 'Game Returned',
+            callback(
+              null,
+              success({
                 game: {
                   id: gameState.id,
                   gameOver: gameState.gameOver,
@@ -149,7 +96,7 @@ module.exports.handler = (event, context, callback) => {
                   correctGuesses: gameState.correctGuesses
                 }
               })
-            })
+            )
           }
         })
       }
