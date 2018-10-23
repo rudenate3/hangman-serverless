@@ -1,13 +1,9 @@
 'use strict'
 
-const { failure, success } = require('../utils/response')
+const { failure, success } = require('../utils/response'),
+  docClient = require('../utils/dynamo').createDocClient()
 
-const AWS = require('aws-sdk'),
-  docClient = new AWS.DynamoDB.DocumentClient({
-    region: process.env.REGION
-  })
-
-module.exports.handler = (event, context, callback) => {
+module.exports.handler = async (event, context, callback) => {
   const params = {
     TableName: process.env.DYNAMODB_TABLE,
     FilterExpression: 'email = :emailVal and gameOver = :gameOverVal',
@@ -17,23 +13,14 @@ module.exports.handler = (event, context, callback) => {
     }
   }
 
-  docClient.scan(params, (err, games) => {
-    if (err) {
-      callback(
-        null,
-        failure({
-          message: 'Error Returned',
-          error: err
-        })
-      )
+  docClient.scan(params, (error, games) => {
+    if (error) {
+      callback(null, failure({ error }))
     }
 
     callback(
       null,
-      success({
-        message: 'Games Returned',
-        games: games.Items.length > 0 ? games.Items : null
-      })
+      success({ games: games.Items.length > 0 ? games.Items : null })
     )
   })
 }
