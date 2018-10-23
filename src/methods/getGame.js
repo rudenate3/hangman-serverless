@@ -2,10 +2,8 @@
 
 const randomNumber = (min, max) => Math.floor(Math.random() * (max - min) + min)
 
-const AWS = require('aws-sdk'),
-  docClient = new AWS.DynamoDB.DocumentClient({
-    region: process.env.REGION
-  }),
+const { failure, success } = require('../utils/response'),
+  docClient = require('../utils/dynamo').createDocClient(),
   uuid = require('uuid')
 
 module.exports.handler = (event, context, callback) => {
@@ -18,28 +16,15 @@ module.exports.handler = (event, context, callback) => {
     }
   }
 
-  docClient.scan(params, (err, game) => {
-    if (err) {
-      callback(null, {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': process.env.ORIGIN
-        },
-        body: JSON.stringify({
-          message: 'Error Returned',
-          error: err
-        })
-      })
+  docClient.scan(params, (error, game) => {
+    if (error) {
+      callback(null, failure(error))
     }
 
     if (game.Items.length === 1) {
-      callback(null, {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': process.env.ORIGIN
-        },
-        body: JSON.stringify({
-          message: 'Game Returned',
+      callback(
+        null,
+        success({
           game: {
             id: game.Items[0].id,
             gameOver: game.Items[0].gameOver,
@@ -48,7 +33,7 @@ module.exports.handler = (event, context, callback) => {
             guessed: game.Items[0].guessed
           }
         })
-      })
+      )
     } else {
       const words = require('words.json').words,
         randomWord = randomNumber(0, words.length - 1),
@@ -64,34 +49,16 @@ module.exports.handler = (event, context, callback) => {
           created: new Date().toString()
         }
       }
-      docClient.put(newGameParams, (err, game) => {
-        if (err) {
-          callback(null, {
-            statusCode: 200,
-            headers: {
-              'Access-Control-Allow-Origin': process.env.ORIGIN
-            },
-            body: JSON.stringify({
-              message: 'Error Returned',
-              error: err
-            })
-          })
+      docClient.put(newGameParams, (error, game) => {
+        if (error) {
+          callback(null, failure(error))
         } else {
           const game = {
             id: newGameParams.Item.id,
             gameOver: false,
             guessed: newGameParams.Item.guessed
           }
-          callback(null, {
-            statusCode: 200,
-            headers: {
-              'Access-Control-Allow-Origin': process.env.ORIGIN
-            },
-            body: JSON.stringify({
-              message: 'Game Returned',
-              game
-            })
-          })
+          callback(null, success(game))
         }
       })
     }
