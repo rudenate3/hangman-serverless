@@ -1,5 +1,7 @@
 'use strict'
 
+const { failure, success } = require('../utils/response')
+
 const AWS = require('aws-sdk'),
   docClient = new AWS.DynamoDB.DocumentClient({
     region: process.env.REGION
@@ -17,27 +19,21 @@ module.exports.handler = (event, context, callback) => {
 
   docClient.scan(params, (err, games) => {
     if (err) {
-      callback(null, {
-        statusCode: 200,
-        headers: {
-          'Access-Control-Allow-Origin': process.env.ORIGIN
-        },
-        body: JSON.stringify({
+      callback(
+        null,
+        failure({
           message: 'Error Returned',
           error: err
         })
-      })
+      )
     }
 
-    callback(null, {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': process.env.ORIGIN
-      },
-      body: JSON.stringify({
+    callback(
+      null,
+      success({
         message: 'Games Returned',
         games: games.Items.length > 0 ? games.Items : null
       })
-    })
+    )
   })
 }
